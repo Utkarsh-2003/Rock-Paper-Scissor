@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import PubNub from 'pubnub';
 
+// Generate UUIDs outside of the component to ensure they are unique per device
+const uuid = PubNub.generateUUID();
 const pubnub = new PubNub({
   publishKey: process.env.PUBLISH_KEY,
   subscribeKey: process.env.SUBSCRIBE_KEY,
-  uuid: PubNub.generateUUID(),
+  uuid: uuid,
 });
 
 const Game = () => {
@@ -36,7 +38,7 @@ const Game = () => {
   const createRoom = () => {
     const roomId = Math.random().toString(36).substr(2, 6);
     setRoomId(roomId);
-    setPlayer(pubnub.getUUID()); 
+    setPlayer(uuid); // Use the generated UUID here
     setIsRoomCreator(true);
     // Publish the room ID
     pubnub.publish({ channel: 'rps-room', message: { roomId, action: 'create' } });
