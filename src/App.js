@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import PubNub from 'pubnub';
 
 const pubnub = new PubNub({
-
   publishKey: process.env.PUBLISH_KEY,
   subscribeKey: process.env.SUBSCRIBE_KEY,
   uuid: PubNub.generateUUID(),
@@ -43,12 +42,17 @@ const Game = () => {
     pubnub.publish({ channel: 'rps-room', message: { roomId, action: 'create' } });
   };
 
-  const joinRoom = (roomId) => {
-    setRoomId(roomId);
-    // Subscribe to the specific room's channel
-    pubnub.subscribe({ channels: [roomId] });
-    // Publish to the room that you've joined
-    pubnub.publish({ channel: 'rps-room', message: { roomId, action: 'join', sender: pubnub.getUUID() } });
+  const joinRoom = () => {
+    // Check if roomId is not empty
+    if (roomId.trim() !== '') {
+      // Subscribe to the specific room's channel
+      pubnub.subscribe({ channels: [roomId] });
+      // Publish to the room that you've joined
+      pubnub.publish({ channel: 'rps-room', message: { roomId, action: 'join', sender: pubnub.getUUID() } });
+    } else {
+      // Handle empty roomId input
+      alert('Please enter a valid Room ID.');
+    }
   };
 
   const handleMove = (move) => {
@@ -84,8 +88,8 @@ const Game = () => {
         <div>
           <h1>Rock, Paper, Scissors</h1>
           <button onClick={createRoom}>Create Room</button>
-          <input placeholder="Enter Room ID" onChange={(e) => setRoomId(e.target.value)} />
-          <button onClick={() => joinRoom(roomId)}>Join Room</button>
+          <input placeholder="Enter Room ID" value={roomId} onChange={(e) => setRoomId(e.target.value)} />
+          <button onClick={joinRoom}>Join Room</button>
         </div>
       )}
       {roomId && !gameStarted && (
