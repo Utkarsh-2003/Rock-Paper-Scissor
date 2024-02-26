@@ -1,28 +1,35 @@
-import React, { useState, useEffect } from 'react';
-import PubNub from 'pubnub';
+import React, { useState, useEffect } from "react";
+import PubNub from "pubnub";
 
-// Generate UUIDs outside of the component to ensure they are unique per device
-const uuid = PubNub.generateUUID();
+const getUUID = () => {
+  let uuid = localStorage.getItem("pubnub_uuid");
+  if (!uuid) {
+    uuid = PubNub.generateUUID();
+    localStorage.setItem("pubnub_uuid", uuid);
+  }
+  return uuid;
+};
+
 const pubnub = new PubNub({
-  publishKey: process.env.PUBLISH_KEY,
-  subscribeKey: process.env.SUBSCRIBE_KEY,
-  uuid: uuid,
+  publishKey: process.env.REACT_APP_PUBLISH_KEY,
+  subscribeKey: process.env.REACT_APP_SUBSCRIBE_KEY,
+  uuid: getUUID(),
 });
 
 const Game = () => {
-  const [player, setPlayer] = useState('');
-  const [opponentMove, setOpponentMove] = useState('');
-  const [result, setResult] = useState('');
+  const [player, setPlayer] = useState("");
+  const [opponentMove, setOpponentMove] = useState("");
+  const [result, setResult] = useState("");
   const [gameStarted, setGameStarted] = useState(false);
-  const [roomId, setRoomId] = useState('');
+  const [roomId, setRoomId] = useState("");
   const [isRoomCreator, setIsRoomCreator] = useState(false);
 
   useEffect(() => {
     pubnub.addListener({
-      message: handleMessage
+      message: handleMessage,
     });
     // Subscribe to global channel for room creation messages
-    pubnub.subscribe({ channels: ['rps-room'] });
+    pubnub.subscribe({ channels: ["rps-room"] });
   }, []);
 
   const handleMessage = (message) => {
@@ -38,22 +45,28 @@ const Game = () => {
   const createRoom = () => {
     const roomId = Math.random().toString(36).substr(2, 6);
     setRoomId(roomId);
-    setPlayer(uuid); // Use the generated UUID here
+    setPlayer(pubnub.getUUID()); // Use the generated UUID here
     setIsRoomCreator(true);
     // Publish the room ID
-    pubnub.publish({ channel: 'rps-room', message: { roomId, action: 'create' } });
+    pubnub.publish({
+      channel: "rps-room",
+      message: { roomId, action: "create" },
+    });
   };
 
   const joinRoom = () => {
     // Check if roomId is not empty
-    if (roomId.trim() !== '') {
+    if (roomId.trim() !== "") {
       // Subscribe to the specific room's channel
       pubnub.subscribe({ channels: [roomId] });
       // Publish to the room that you've joined
-      pubnub.publish({ channel: 'rps-room', message: { roomId, action: 'join', sender: pubnub.getUUID() } });
+      pubnub.publish({
+        channel: "rps-room",
+        message: { roomId, action: "join", sender: pubnub.getUUID() },
+      });
     } else {
       // Handle empty roomId input
-      alert('Please enter a valid Room ID.');
+      alert("Please enter a valid Room ID.");
     }
   };
 
@@ -61,7 +74,10 @@ const Game = () => {
     if (!gameStarted) {
       setPlayer(move);
       setGameStarted(true);
-      pubnub.publish({ channel: roomId, message: { move, sender: pubnub.getUUID(), roomId } });
+      pubnub.publish({
+        channel: roomId,
+        message: { move, sender: pubnub.getUUID(), roomId },
+      });
       setTimeout(() => {
         determineWinner();
       }, 2000);
@@ -71,15 +87,15 @@ const Game = () => {
   const determineWinner = () => {
     if (player && opponentMove) {
       if (player === opponentMove) {
-        setResult('It\'s a tie!');
+        setResult("It's a tie!");
       } else if (
-        (player === 'rock' && opponentMove === 'scissors') ||
-        (player === 'paper' && opponentMove === 'rock') ||
-        (player === 'scissors' && opponentMove === 'paper')
+        (player === "rock" && opponentMove === "scissors") ||
+        (player === "paper" && opponentMove === "rock") ||
+        (player === "scissors" && opponentMove === "paper")
       ) {
-        setResult('You win!');
+        setResult("You win!");
       } else {
-        setResult('You lose!');
+        setResult("You lose!");
       }
     }
   };
@@ -90,7 +106,11 @@ const Game = () => {
         <div>
           <h1>Rock, Paper, Scissors</h1>
           <button onClick={createRoom}>Create Room</button>
-          <input placeholder="Enter Room ID" value={roomId} onChange={(e) => setRoomId(e.target.value)} />
+          <input
+            placeholder="Enter Room ID"
+            value={roomId}
+            onChange={(e) => setRoomId(e.target.value)}
+          />
           <button onClick={joinRoom}>Join Room</button>
         </div>
       )}
@@ -103,9 +123,9 @@ const Game = () => {
       {gameStarted && (
         <div>
           <h2>Choose your move:</h2>
-          <button onClick={() => handleMove('rock')}>Rock</button>
-          <button onClick={() => handleMove('paper')}>Paper</button>
-          <button onClick={() => handleMove('scissors')}>Scissors</button>
+          <button onClick={() => handleMove("rock")}>Rock</button>
+          <button onClick={() => handleMove("paper")}>Paper</button>
+          <button onClick={() => handleMove("scissors")}>Scissors</button>
         </div>
       )}
       {result && (
